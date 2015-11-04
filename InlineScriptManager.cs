@@ -23,7 +23,7 @@ namespace ScriptManagerPlus
         private const string DependsOnAttributeName = "script-depends-on";
         private const string AliasAttributeName = "script-alias";
         private const string SrcAttributeName = "src";
-        private const string IsDependencyAttributeName = "IsD  ependency";
+        private const string IsDependencyAttributeName = "IsDependency";
 
         public const string ViewDataKey = "NamedScriptInfos";
 
@@ -109,12 +109,12 @@ namespace ScriptManagerPlus
         public override async Task ProcessAsync(TagHelperContext context, TagHelperOutput output)
         {
             //Validate inputs
-            var hasName = _namePatern.IsMatch(Name);
+            var hasName = null != Name && _namePatern.IsMatch(Name);
             var hasSrc = !string.IsNullOrWhiteSpace(Src);
             if (!hasName && !hasSrc)
                 throw new ArgumentException("Name is required.  It must be a single string without whitespace, commas, pipes or semi-colons.", nameof(Name));
             var namedScript = new NamedScriptInfo { Name = Name ?? Src, Src = Src, Dependancies = _dependsOn, Aliases = _aliases };
-            if (!hasSrc)
+            if (hasSrc)
             {
                 //Get the script contents
                 if (!Src.EndsWith(".min.js"))
