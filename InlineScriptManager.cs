@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.AspNet.Http;
@@ -28,7 +29,7 @@ namespace ScriptManagerPlus
         public const string ViewDataKey = "NamedScriptInfos";
 
         static readonly Regex _namePatern = new Regex(@"^[^\s|;,]+$");
-        static readonly Regex _listPatern = new Regex(@"^[^\s|;,]+([\s|;,]+)*[^\s|;,]+$");
+        static readonly Regex _listPatern = new Regex(@"^([^\s|;,]+[\s|;,]+)*[^\s|;,]+$");
 
         private readonly IHttpContextAccessor _httpContextAccessor;
         private string[] _aliases;
@@ -116,11 +117,15 @@ namespace ScriptManagerPlus
             var namedScript = new NamedScriptInfo { Name = Name ?? Src, Src = Src, Dependancies = _dependsOn, Aliases = _aliases };
             if (hasSrc)
             {
-                //Get the script contents
                 if (!Src.EndsWith(".min.js"))
                 {
                     //TODO:  Consider automatically looking at a minified source cache
                 }
+            }
+            else
+            {
+                //Get the script contents
+
                 var contents = await context.GetChildContentAsync();
                 var scriptContent = contents.GetContent();
                 namedScript.Script = scriptContent;
@@ -149,6 +154,10 @@ namespace ScriptManagerPlus
     [HtmlTargetElement("script", Attributes = RenderAttributeName)]
     public class InlineScriptTagHelper : TagHelper
     {
+        private static readonly Regex _inScriptTagsPattern =
+                new Regex(@"\<\s*script[^\>]+((?<=/)\>|\>([^\<]|\<(?!/?\s*script))*\</\s*script\s*\>)$",
+                    RegexOptions.Compiled | RegexOptions.CultureInvariant |
+                    RegexOptions.IgnoreCase | RegexOptions.Singleline);
         private const string RenderAttributeName = "script-render";
         private readonly IHttpContextAccessor _httpContextAccessor;
 
@@ -205,8 +214,12 @@ namespace ScriptManagerPlus
             }
 
             //Concatenate all of them and set them as the contents of this tag
-            var unminifiedContent = output.Content.SetContentEncoded(string.Join("\r\n", OrderedScripts(scripts.Values).Select(os => os.Script)));
-
+            var allScripts = string.Join("\r\n", OrderedScripts(scripts.Values).Select(os => os.Script));
+            output.TagMode = TagMode.StartTagAndEndTag;
+            //HACK:Need to figure out how to get rid of the script tags for the placeholder element
+            allScripts = $"</script>\r\n{allScripts}\r\n<script>";//HACK:ugly
+            var unminifiedContent = output.Content.SetContentEncoded(allScripts);
+            Debug.WriteLine(unminifiedContent.GetContent());
             //TODO:Impliment dynamic minification (Assuming that some scenarios will be sped up, and others slowed down.  Leave choice to user)
         }
 
@@ -240,7 +253,7 @@ namespace ScriptManagerPlus
                                     if (tmp != null)
                                     {
                                         orderedScripts.Remove(tmp);
-                                        orderedScripts.Insert(i--, tmp);
+                                        orderedScripts.Insert(i, tmp);
                                     }
                                     else
                                     {
@@ -277,6 +290,32 @@ namespace ScriptManagerPlus
                         ordered = !issues;
                         break;
                 }
+            foreach (var script in orderedScripts.Where(s => !_inScriptTagsPattern.IsMatch(s.Script??"")))
+            {
+                var withTags = new StringBuilder("<script type='text/javascript' ");
+                if (string.IsNullOrWhiteSpace(script.Src))
+                {
+                    withTags.AppendLine(">");
+                    withTags.AppendLine(script.Script);
+                }
+                else
+                {
+                    var tildaPos = script.Src.LastIndexOf('~');
+                    if (tildaPos>=0)
+                    {
+                        //TODO:Parse the ~ into the proper Url
+                        var pathEnd = tildaPos == script.Src.Length - 1 ? "" : script.Src.Substring(tildaPos + 1);
+                        var request = _httpContextAccessor.HttpContext.Request;
+                        var baseUrl = request.Scheme + "://" + request.Host + "/" 
+                            + (request.PathBase.HasValue ? request.PathBase.Value : "");
+                        script.Src = baseUrl.TrimEnd('/') + pathEnd;
+                    }
+                    withTags.Append($"src='{script.Src}' >");
+                }
+                withTags.Append("</script>");
+                script.Script = withTags.ToString();
+                Debug.Assert(_inScriptTagsPattern.IsMatch(script.Script));
+            }
             return orderedScripts;
         }
 
