@@ -27,12 +27,12 @@ namespace ScriptManagerPlus
         /// </value>
         public string Src { get; set; }
         /// <summary>
-        /// Gets or sets the script's dependancies.
+        /// Gets or sets the script's dependencies.
         /// </summary>
         /// <value>
         /// One or more names of scripts that the script depends on.  The list may be delimited by space, comma, semicolon or tab.
         /// </value>
-        public string[] Dependancies { get; set; }
+        public string[] Dependencies { get; set; }
         /// <summary>
         /// Gets or sets aliases for the script.
         /// </summary>
@@ -44,14 +44,14 @@ namespace ScriptManagerPlus
         public string[] Aliases { get; set; }
         private string[] _allNames;
         /// <summary>
-        /// Gets or sets a value indicating whether this instance is dependancy and should not be rendered unless another script depends on it.
+        /// Gets or sets a value indicating whether this instance is dependency and should not be rendered unless another script depends on it.
         /// </summary>
         /// <value>
         ///   <c>true</c> if this instance should not render if no other scripts reference it in their Script-Depends-On attribute; otherwise, <c>false</c>.
         /// </value>
-        public bool IsDependancy { get; set; }
+        public bool IsDependency { get; set; }
         /// <summary>
-        /// Gets name plus all aliases.  Used by the script-depends-on tag for dependancy handling.
+        /// Gets name plus all aliases.  Used by the script-depends-on tag for dependency handling.
         /// </summary>
         /// <returns>string[] of all referencable names</returns>
         public string[] GetAllNames()

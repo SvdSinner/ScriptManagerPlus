@@ -38,14 +38,14 @@ namespace ScriptManagerPlus
         }
 
         /// <summary>
-        /// Gets or sets the dependancy validation methodology.
+        /// Gets or sets the dependency validation methodology.
         /// Basic simply enforces that a script are run after any scripts that depend on them
         /// </summary>
         /// <value>
-        /// The dependancy validation.
+        /// The dependency validation.
         /// </value>
         [HtmlAttributeName(RenderAttributeName)]
-        public string DependancyValidation
+        public string DependencyValidation
         {
             get { return Enum.GetName(typeof(RenderOptions), _options); }
             set
@@ -77,9 +77,9 @@ namespace ScriptManagerPlus
 
             //Concatenate all of them and set them as the contents of this tag
             var allScripts = string.Join("\r\n", OrderedScripts(scripts.Values).Select(os => os.Script));
-            output.TagMode = TagMode.StartTagAndEndTag;
+            output.TagMode = TagMode.StartTagOnly;
             //HACK:Need to figure out how to get rid of the script tags for the placeholder element
-            allScripts = $"</script>\r\n{allScripts}\r\n<script>";//HACK:ugly
+            allScripts = $"</script>\r\n{allScripts}";//HACK:ugly
             var unminifiedContent = output.Content.SetContentEncoded(allScripts);
             Debug.WriteLine(unminifiedContent.GetContent());
             //TODO:Impliment dynamic minification (Assuming that some scenarios will be sped up, and others slowed down.  Leave choice to user)
@@ -90,7 +90,7 @@ namespace ScriptManagerPlus
             Contract.Requires(null != scripts);
             var orderedScripts = scripts.ToList();
 
-            //HACK:  No effort put into optimizing for large lists or complex dependancies beyond limiting passes if a recursive situation arrises.
+            //HACK:  No effort put into optimizing for large lists or complex dependencies beyond limiting passes if a recursive situation arrises.
             var ordered = false;
             var maxPasses = 15;
             var issues = false;
@@ -99,36 +99,37 @@ namespace ScriptManagerPlus
                 {
                     case RenderOptions.RequireDependencies:
                     case RenderOptions.SkipProblems:
-                        //Both of these methods look forward for any of a script's own dependancies and moves them before the dependant script.
-                        var satisfiedDependancies = new List<string>(orderedScripts.Count);
+                        //Both of these methods look forward for any of a script's own dependencies and moves them before the dependent script.
+                        var satisfiedDependencies = new List<string>(orderedScripts.Count);
                         for (var i = 0; i < orderedScripts.Count; i++)
                         {
                             issues = false;
-                            if (null != orderedScripts[i].Dependancies)
+                            if (null != orderedScripts[i].Dependencies)
                                 foreach (
-                                    var dependancy in
-                                        orderedScripts[i].Dependancies.Where(d => !satisfiedDependancies.Contains(d))
+                                    var dependency in
+                                        orderedScripts[i].Dependencies.Where(d => !satisfiedDependencies.Contains(d))
                                             .ToArray())
                                 {
+                                    issues = true;
+                                    //Unsatisfied Dependency Search
                                     var tmp =
-                                        orderedScripts.Skip(i).FirstOrDefault(s => s.GetAllNames().Contains(dependancy));
+                                        orderedScripts.Skip(i+1).FirstOrDefault(s => s.GetAllNames().Contains(dependency));
                                     if (tmp != null)
                                     {
                                         orderedScripts.Remove(tmp);
                                         orderedScripts.Insert(i, tmp);
                                     }
-                                    else
+                                    else 
                                     {
                                         var msg =
-                                            $"Dependancy missing on {orderedScripts[i].Name}.  Missing dependancy is \"{dependancy}\"";
+                                            $"Dependency missing on {orderedScripts[i].Name}.  Missing dependency is \"{dependency}\"";
                                         if (_options == RenderOptions.RequireDependencies)
                                             throw new DependacyMissingException(msg);
                                         Debug.WriteLine($"{msg}.  Script will be discarded.");
                                         orderedScripts.RemoveAt(i--);
-                                        issues = true;
                                     }
                                 }
-                            satisfiedDependancies.AddRange(orderedScripts[i].GetAllNames());
+                            satisfiedDependencies.AddRange(orderedScripts[i].GetAllNames());
                         }
                         ordered = !issues;
                         break;
@@ -142,8 +143,8 @@ namespace ScriptManagerPlus
                                 orderedScripts.Take(i)
                                     .FirstOrDefault(
                                         ds =>
-                                            null != ds.Dependancies &&
-                                            ds.Dependancies.Intersect(current.GetAllNames()).Any());
+                                            null != ds.Dependencies &&
+                                            ds.Dependencies.Intersect(current.GetAllNames()).Any());
                             if (null == dependentScript) continue;
                             issues = true;
                             if (orderedScripts.Remove(dependentScript))

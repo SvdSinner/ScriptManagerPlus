@@ -58,7 +58,7 @@ namespace ScriptManagerPlus
         /// Gets or sets a list of scripts that must be loaded before execution.  List can be delimited by spaces, commas, pipes or semi-colons.
         /// </summary>
         /// <value>
-        /// The name or aliases of all dependant on scripts
+        /// The name or aliases of all dependent on scripts
         /// </value>
         [HtmlAttributeName(DependsOnAttributeName)]
         public string DependsOn
@@ -111,7 +111,7 @@ namespace ScriptManagerPlus
             var hasSrc = !string.IsNullOrWhiteSpace(Src);
             if (!hasName && !hasSrc)
                 throw new ArgumentException("Name is required.  It must be a single string without whitespace, commas, pipes or semi-colons.", nameof(Name));
-            var namedScript = new NamedScriptInfo { Name = Name ?? Src, Src = Src, Dependancies = _dependsOn, Aliases = _aliases };
+            var namedScript = new NamedScriptInfo { Name = Name ?? Src, Src = Src, Dependencies = _dependsOn, Aliases = _aliases };
             if (hasSrc)
             {
                 if (!Src.EndsWith(".min.js"))
