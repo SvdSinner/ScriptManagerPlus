@@ -77,9 +77,9 @@ namespace ScriptManagerPlus
 
             //Concatenate all of them and set them as the contents of this tag
             var allScripts = string.Join("\r\n", OrderedScripts(scripts.Values).Select(os => os.Script));
-            output.TagMode = TagMode.StartTagOnly;
+            output.TagMode = TagMode.StartTagAndEndTag;
             //HACK:Need to figure out how to get rid of the script tags for the placeholder element
-            allScripts = $"</script>\r\n{allScripts}";//HACK:ugly
+            allScripts = $"</script><!--Rendered Scripts Output START-->\r\n{allScripts}\r\n</script><!--Rendered Scripts Output END-->script>";//HACK:ugly
             var unminifiedContent = output.Content.SetContentEncoded(allScripts);
             Debug.WriteLine(unminifiedContent.GetContent());
             //TODO:Impliment dynamic minification (Assuming that some scenarios will be sped up, and others slowed down.  Leave choice to user)
