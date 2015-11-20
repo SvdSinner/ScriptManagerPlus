@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.AspNet.Http;
-using Microsoft.AspNet.Razor.Runtime.TagHelpers;
+using Microsoft.AspNet.Razor.TagHelpers;
 
 namespace ScriptManagerPlus
 {
@@ -79,8 +79,8 @@ namespace ScriptManagerPlus
             var allScripts = string.Join("\r\n", OrderedScripts(scripts.Values).Select(os => os.Script));
             output.TagMode = TagMode.StartTagAndEndTag;
             //HACK:Need to figure out how to get rid of the script tags for the placeholder element
-            allScripts = $"</script><!--Rendered Scripts Output START-->\r\n{allScripts}\r\n</script><!--Rendered Scripts Output END-->script>";//HACK:ugly
-            var unminifiedContent = output.Content.SetContentEncoded(allScripts);
+            allScripts = $"</script><!--Rendered Scripts Output START-->\r\n{allScripts}\r\n</script><!--Rendered Scripts Output END--><script>";//HACK:ugly
+            var unminifiedContent = output.Content.SetHtmlContent(allScripts);
             Debug.WriteLine(unminifiedContent.GetContent());
             //TODO:Impliment dynamic minification (Assuming that some scenarios will be sped up, and others slowed down.  Leave choice to user)
         }

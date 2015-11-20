@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.AspNet.Http;
 using Microsoft.AspNet.Razor.Runtime.TagHelpers;
+using Microsoft.AspNet.Razor.TagHelpers;
 
 namespace ScriptManagerPlus
 {
@@ -122,8 +124,7 @@ namespace ScriptManagerPlus
             else
             {
                 //Get the script contents
-
-                var contents = await context.GetChildContentAsync();
+                var contents = await output.GetChildContentAsync(true);
                 var scriptContent = contents.GetContent();
                 namedScript.Script = scriptContent;
             }
